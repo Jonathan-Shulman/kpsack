@@ -1,0 +1,280 @@
+SELECT CONCAT(p.first_name, ' ', p.last_name)as name,
+c.name as course_name,
+s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+LEFT JOIN university.courses c
+ON s_c.course_id = c.course_id;
+
+SELECT c.name as course_name,
+CONCAT(p.first_name, ' ', p.last_name) as name
+FROM university.courses c
+INNER JOIN university.professors prof
+ON prof.professor_id = c.professor_id
+INNER JOIN university.people p
+ON p.person_id = prof.person_id
+AND CONCAT(p.first_name, ' ', p.last_name) = 'Matthew Harrison';
+
+SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+c.name as course_name,
+s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+INNER JOIN university.courses c
+ON s_c.course_id = c.course_id
+AND c.passing_grade <= s_c.grade;
+
+SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+a.city as city,
+a.street as street
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+INNER JOIN university.address a
+on p.address_id = a.address_id;
+
+SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+c.name as course_name,
+s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+INNER JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+AND s_c.grade IN ((SELECT MAX(university.student_courses.grade) FROM university.student_courses), (SELECT MIN(university.student_courses.grade) FROM university.student_courses))
+INNER JOIN university.courses c
+ON s_c.course_id = c.course_id;
+
+-- count studetns that failed atleast once
+SELECT COUNT(failers.name) as failed_atleast_once
+FROM
+(
+	SELECT distinct CONCAT(p.first_name, ' ', p.last_name) as name
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+INNER JOIN university.courses c
+ON s_c.course_id = c.course_id
+AND c.passing_grade > s_c.grade
+) as failers;
+
+
+-- count studetns that failed all courses
+SELECT COUNT(failers.name) as failed_all
+FROM
+(
+	SELECT distinct CONCAT(p.first_name, ' ', p.last_name) as name
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+EXCEPT
+	SELECT distinct CONCAT(p.first_name, ' ', p.last_name) as name
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+INNER JOIN university.courses c
+ON s_c.course_id = c.course_id
+AND c.passing_grade <= s_c.grade 
+) as failers;
+
+
+--Get AVG grade of 'Rachel Garcia':
+
+
+SELECT AVG(rachel_courses.grade) as rachel_avg
+FROM(
+	SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+	s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+AND CONCAT(p.first_name, ' ', p.last_name) = 'Rachel Garcia'
+) as rachel_courses;
+
+
+-- Sub select ex:
+-- Select students and proffessors if professor taught student
+
+SELECT prof_courses.course_name as course_name,
+prof_courses.name as prof_name,
+student_courses.name as student_name
+FROM
+(
+(SELECT c.name as course_name,
+CONCAT(p.first_name, ' ', p.last_name) as name
+FROM university.courses c
+INNER JOIN university.professors prof
+ON prof.professor_id = c.professor_id
+INNER JOIN university.people p
+ON p.person_id = prof.person_id
+) as prof_courses
+INNER JOIN
+(SELECT CONCAT(p.first_name, ' ', p.last_name)as name,
+c.name as course_name,
+s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+LEFT JOIN university.courses c
+ON s_c.course_id = c.course_id
+) as student_courses
+ON prof_courses.course_name = student_courses.course_name
+)
+ORDER BY prof_name, course_name ASC;
+
+-- 
+
+
+SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+AVG(s_c.grade) as average
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+LEFT JOIN university.courses c
+ON s_c.course_id = c.course_id
+GROUP BY CONCAT(p.first_name, ' ', p.last_name)
+HAVING AVG(s_c.grade)  > (SELECT AVG(grade) FROM university.student_courses);
+
+
+SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+AVG(s_c.grade) as average
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+LEFT JOIN university.courses c
+ON s_c.course_id = c.course_id
+GROUP BY CONCAT(p.first_name, ' ', p.last_name)
+HAVING AVG(s_c.grade)  > (SELECT AVG(grade) FROM university.student_courses);
+
+
+SELECT CONCAT(p.first_name, ' ', p.last_name)as name,
+c.name as course_name,
+s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+LEFT JOIN university.courses c
+ON s_c.course_id = c.course_id
+WHERE s_c.course_id IN (SELECT s_c.course_id
+				FROM university.people p	
+				INNER JOIN university.students s
+				ON s.person_id = p.person_id
+				INNER JOIN university.student_courses s_c
+				ON s_c.student_id = s.student_id
+				AND s_c.student_id = (SELECT s_c.student_id
+										FROM university.students s
+										INNER JOIN university.student_courses s_c
+										ON s_c.student_id = s.student_id
+										WHERE s_c.grade = (SELECT MAX(university.student_courses.grade) FROM university.student_courses)
+									 )
+				)
+ORDER BY grade;
+
+
+
+-- Student/course pairs with studentgrade bigger then avg in course
+SELECT CONCAT(p.first_name, ' ', p.last_name) as name,
+c.name as course_name,
+s_c.grade as grade
+FROM university.people p
+INNER JOIN university.students s
+ON s.person_id = p.person_id
+RIGHT JOIN university.student_courses s_c
+ON s_c.student_id = s.student_id
+LEFT JOIN university.courses c
+ON s_c.course_id = c.course_id 
+WHERE s_c.grade >= (SELECT AVG(sc.grade) 
+				   FROM university.student_courses sc
+				   WHERE sc.course_id = s_c.course_id
+				   );
+				   
+SELECT AVG(age)
+FROM(
+	SELECT AGE(NOW(), p.birthdate) as age
+	FROM university.people as p
+	INNER JOIN university.professors prof
+	ON prof.person_id = p.person_id
+	UNION ALL 
+	SELECT AGE(NOW(), p2.birthdate) as age
+	FROM university.people as p2
+	INNER JOIN university.professors prof
+	ON prof.person_id = p2.person_id
+) as age_table;
+				   
+
+
+SELECT count(prof.professor_id), CONCAT(p.first_name, ' ', p.last_name) as name
+FROM university.professors prof
+INNER JOIN university.people p
+ON p.person_id = prof.person_id
+INNER JOIN university.courses c
+ON c.professor_id = prof.professor_id
+GROUP BY p.first_name, p.last_name;
+
+SELECT AVG(s_c.grade), c.name
+FROM university.student_courses s_c
+INNER JOIN university.courses c
+ON s_c.course_id = c.course_id
+GROUP BY c.name;
+
+SELECT AVG(s_c.grade) AS avg_grade, 
+CASE 
+WHEN EXTRACT(YEAR FROM AGE(NOW(), p.birthdate)) < 30 THEN 'under 30'
+WHEN EXTRACT(YEAR FROM AGE(NOW(), p.birthdate)) >=30 AND EXTRACT(YEAR FROM AGE(NOW(), p.birthdate)) < 40 THEN '30-40'
+WHEN EXTRACT(YEAR FROM AGE(NOW(), p.birthdate)) >=30 AND EXTRACT(YEAR FROM AGE(NOW(), p.birthdate))< 40 THEN '30-40'
+ELSE '40+'
+END
+AS age_grp
+FROM university.people p
+INNER JOIN university.students s
+ON p.person_id = s.person_id
+INNER JOIN university.student_courses as s_c
+ON s_c.student_id = s.student_id
+GROUP BY age_grp;
+
+
+-- UPDATE university.student_courses
+-- SET grade = grade + 10
+-- WHERE grade < 55;
+
+
+-- DELETE FROM university.professors as prof
+-- WHERE favorite_book IS NULL
+-- AND (SELECT COUNT(*) FROM university.courses as c WHERE c.professor_id = prof.professor_id) >= 2
+-- AND prof.person_id = 35;
+SELECT * FROM university.professors as prof
+
+
+
+
+
+
+
+				  
+				   
+				   
+
+				   
+
+
+
